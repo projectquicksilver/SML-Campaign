@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SML - Farmer Registration</title>
+    <link rel="icon" href="sml_tab_logo.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-container">
+                <div class="logo-wrapper">
+                    <img src="sml_logo.png" alt="SML" class="app-logo" onerror="this.style.display='none';">
+                </div>
+                <div class="logo-wrapper">
+                    <img src="sumil_logo.png" alt="Sumil" class="app-logo" onerror="this.style.display='none';">
+                </div>
+            </div>
+            <h1 class="page-title" data-tr="pageTitle">Farmer Registration</h1>
+            <p class="page-subtitle" data-tr="pageSubtitle">Complete the form below</p>
+        </header>
+
+        <div class="form-container" id="formContainer">
+            <!-- Language -->
+            <div class="form-section">
+                <h2 class="section-title" data-tr="langSec">Language Preference</h2>
+                <div class="lang-cards">
+                    <label class="lang-card">
+                        <input type="radio" name="language" value="English" required>
+                        <div class="lang-content">
+                            <div class="lang-icon">EN</div>
+                            <div class="lang-text">
+                                <div class="lang-name">English</div>
+                            </div>
+                            <div class="lang-check"></div>
+                        </div>
+                    </label>
+                    <label class="lang-card">
+                        <input type="radio" name="language" value="Marathi">
+                        <div class="lang-content">
+                            <div class="lang-icon">मर</div>
+                            <div class="lang-text">
+                                <div class="lang-name">Marathi</div>
+                            </div>
+                            <div class="lang-check"></div>
+                        </div>
+                    </label>
+                    <label class="lang-card">
+                        <input type="radio" name="language" value="Gujarati">
+                        <div class="lang-content">
+                            <div class="lang-icon">ગુ</div>
+                            <div class="lang-text">
+                                <div class="lang-name">Gujarati</div>
+                            </div>
+                            <div class="lang-check"></div>
+                        </div>
+                    </label>
+                </div>
+                <span class="error-text" id="err-lang"></span>
+            </div>
+
+            <!-- Personal -->
+            <div class="form-section">
+                <h2 class="section-title" data-tr="persSec">Personal Information</h2>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="nameLbl">Your Name</label>
+                    <input type="text" id="name" class="field-input" data-tr-ph="namePh" placeholder="Enter your full name" required>
+                    <span class="error-text" id="err-name"></span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="mobLbl">Mobile Number</label>
+                    <input type="tel" id="mobile" class="field-input" placeholder="10 digits" maxlength="10" required>
+                    <span class="error-text" id="err-mobile"></span>
+                </div>
+            </div>
+
+            <!-- Farm -->
+            <div class="form-section">
+                <h2 class="section-title" data-tr="farmSec">Farm Information</h2>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="cropsLbl">Select Your Crops</label>
+                    <div class="crops-grid">
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Wheat"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cWheat">Wheat</span></div></label>
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Cotton"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cCotton">Cotton</span></div></label>
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Soybean"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cSoy">Soybean</span></div></label>
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Groundnut"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cGround">Groundnut</span></div></label>
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Maize"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cMaize">Maize</span></div></label>
+                        <label class="crop-box"><input type="checkbox" name="crops" value="Sugarcane"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cSugar">Sugarcane</span></div></label>
+                        <label class="crop-box"><input type="checkbox" id="otherChk" name="crops" value="Other"><div class="crop-lbl"><div class="crop-icon"></div><span data-tr="cOther">Other</span></div></label>
+                    </div>
+                    <div class="other-input" id="otherInput">
+                        <input type="text" id="otherCrop" class="field-input" data-tr-ph="otherPh" placeholder="Specify your crop">
+                    </div>
+                    <span class="error-text" id="err-crops"></span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="acreLbl">Land Area (in acres)</label>
+                    <input type="number" id="acreage" class="field-input" data-tr-ph="acrePh" placeholder="e.g., 2.5" step="0.1" min="0" required>
+                    <span class="error-text" id="err-acreage"></span>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-section">
+                <h2 class="section-title" data-tr="locSec">Location Details</h2>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="stateLbl">State</label>
+                    <select id="state" class="field-select" required>
+                        <option value="" data-tr="stateSel">Select your state</option>
+                        <option value="Gujarat" data-tr="stateGuj">Gujarat</option>
+                        <option value="Maharashtra" data-tr="stateMah">Maharashtra</option>
+                    </select>
+                    <span class="error-text" id="err-state"></span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="distLbl">District</label>
+                    <select id="district" class="field-select" disabled required>
+                        <option value="" data-tr="distSel">Select your district</option>
+                    </select>
+                    <span class="error-text" id="err-district"></span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" data-tr="placeLbl">Village/Town (Optional)</label>
+                    <input type="text" id="place" class="field-input" data-tr-ph="placePh" placeholder="Enter your location">
+                </div>
+            </div>
+
+            <!-- Product -->
+            <div class="form-section">
+                <h2 class="section-title" data-tr="prodSec">Product Information</h2>
+                <div class="field-group">
+                    <label class="field-label required" data-tr="prodLbl">Please indicate the company whose product(s) you have previously used</label>
+                    <select id="usedProducts" class="field-select" required>
+                        <option value="" data-tr="prodSel">Select an option</option>
+                        <option value="SML" data-tr="prodSML">SML</option>
+                        <option value="Sumil Chemicals" data-tr="prodSumil">Sumil Chemicals</option>
+                        <option value="Both" data-tr="prodBoth">Both</option>
+                        <option value="None" data-tr="prodNone">None</option>
+                    </select>
+                    <span class="error-text" id="err-products"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-wrap">
+            <button type="button" class="submit-btn" id="submitBtn"><span data-tr="submitBtn">Submit Registration</span></button>
+        </div>
+
+        <div class="success-screen" id="successScreen">
+            <div class="success-circle"><div class="success-check">✓</div></div>
+            <h2 class="success-title" data-tr="successTitle">Thank you!</h2>
+            <p class="success-msg" data-tr="successMsg">Your information has been submitted successfully. We'll get in touch with you soon.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
