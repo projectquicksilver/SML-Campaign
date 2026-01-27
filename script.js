@@ -18,19 +18,19 @@ const AGENT_NAME = 'Digicides demo';
 const CAMPAIGN_MAPPING = {
     'Marathi': {
         'SML': 'thankmr',
-        'Sumil Chemicals': 'thankyoumr',
+        'Sumil Chemicals': 'thankmr',
         'Both': 'thankmr',
         'None': 'thankmr'
     },
     'Gujarati': {
         'SML': 'thankgu',
-        'Sumil Chemicals': 'thankyougu',
+        'Sumil Chemicals': 'thankgu',
         'Both': 'thankgu',
         'None': 'thankgu'
     },
     'English': {
         'SML': 'thankmr', // Default to Marathi for English
-        'Sumil Chemicals': 'thankyoumr',
+        'Sumil Chemicals': 'thankmr',
         'Both': 'thankmr',
         'None': 'thankmr'
     }
@@ -704,3 +704,4 @@ function showSuccess() {
     document.getElementById('successScreen').classList.add('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
