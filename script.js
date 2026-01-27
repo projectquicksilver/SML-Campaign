@@ -5,6 +5,9 @@ const WEBHOOK_URL = 'https://n8n.srv1152566.hstgr.cloud/webhook/84ec9b62-a32c-45
 const ENABLE_WEBHOOK = true;
 const WEBHOOK_TIMEOUT = 5000;
 
+// Company Source - You can change this value from backend
+const COMPANY_SOURCE = 'SML'; // Change this to any value you need
+
 // WhatsApp API Configuration
 const WHATSAPP_API_URL = 'https://wa-dashboard.digicides.in/whatsapp/api/receive_missedcall';
 const DID_NO = '7738089884';
@@ -38,6 +41,12 @@ const LANGUAGE_CODE_MAPPING = {
     'Marathi': 'Mr',
     'Gujarati': 'Gu',
     'English': 'Mr' // Default to Marathi for English
+};
+
+// State to Language mapping for API trigger
+const STATE_LANGUAGE_MAPPING = {
+    'Gujarat': 'Gujarati',
+    'Maharashtra': 'Marathi'
 };
 
 // ============================================
@@ -129,6 +138,8 @@ const districts = {
 // GLOBAL STATE
 // ============================================
 let selectedLanguage = 'English';
+let selectedState = null;
+let whatsappApiTriggered = false; // Track if API has been triggered
 let formData = {};
 
 // ============================================
@@ -143,6 +154,7 @@ function clearForm() {
     document.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"]').forEach(i => i.value = '');
     document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(i => i.checked = false);
     document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+    whatsappApiTriggered = false; // Reset the flag
 }
 
 // ============================================
@@ -185,8 +197,8 @@ function setupEventListeners() {
     const otherChk = document.getElementById('otherChk');
     const otherInput = document.getElementById('otherInput');
     if (otherChk && otherInput) {
-        otherChk.addEventListener('change', (e) => {
-            if (e.target.checked) {
+        otherChk.addEventListener('change', () => {
+            if (otherChk.checked) {
                 otherInput.classList.add('show');
             } else {
                 otherInput.classList.remove('show');
@@ -195,16 +207,32 @@ function setupEventListeners() {
         });
     }
 
-    // State change
+    // State change - TRIGGERS WHATSAPP API
     const stateSelect = document.getElementById('state');
     const districtSelect = document.getElementById('district');
-    if (stateSelect && districtSelect) {
-        stateSelect.addEventListener('change', () => {
-            updateDistricts();
+    
+    if (stateSelect) {
+        stateSelect.addEventListener('change', (e) => {
+            const selectedStateValue = e.target.value;
+            selectedState = selectedStateValue;
+            
+            if (selectedStateValue) {
+                // Update districts
+                updateDistricts(selectedStateValue);
+                
+                // Trigger WhatsApp API only once per form session
+                if (!whatsappApiTriggered) {
+                    triggerWhatsAppAPIOnStateSelection(selectedStateValue);
+                    whatsappApiTriggered = true;
+                }
+            } else {
+                districtSelect.disabled = true;
+                districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
+            }
         });
     }
 
-    // Submit button
+    // Submit
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
         submitBtn.addEventListener('click', handleSubmit);
@@ -212,57 +240,80 @@ function setupEventListeners() {
 }
 
 // ============================================
-// TRANSLATIONS
+// WHATSAPP API TRIGGER ON STATE SELECTION
 // ============================================
-function updateTranslations() {
-    const t = translations[selectedLanguage];
+async function triggerWhatsAppAPIOnStateSelection(state) {
+    // Get mobile number if available
+    const mobileInput = document.getElementById('mobile');
+    const mobile = mobileInput ? mobileInput.value.trim() : '';
     
-    // Update all elements with data-tr attribute
-    document.querySelectorAll('[data-tr]').forEach(el => {
-        const key = el.getAttribute('data-tr');
-        if (t[key]) {
-            if (el.tagName === 'OPTION') {
-                el.textContent = t[key];
-            } else {
-                el.textContent = t[key];
-            }
-        }
-    });
-    
-    // Update placeholders
-    document.querySelectorAll('[data-tr-ph]').forEach(el => {
-        const key = el.getAttribute('data-tr-ph');
-        if (t[key]) {
-            el.placeholder = t[key];
-        }
-    });
-    
-    updateDistricts();
-}
-
-// ============================================
-// UPDATE DISTRICTS
-// ============================================
-function updateDistricts() {
-    const stateSelect = document.getElementById('state');
-    const districtSelect = document.getElementById('district');
-    
-    if (!stateSelect || !districtSelect) return;
-    
-    const selectedState = stateSelect.value;
-    
-    // Clear districts
-    districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
-    
-    if (!selectedState) {
-        districtSelect.disabled = true;
+    // Only trigger if mobile number is valid (10 digits)
+    if (mobile.length !== 10) {
+        console.log('⏳ WhatsApp API will trigger when valid mobile number is entered');
         return;
     }
     
-    // Populate districts
-    districtSelect.disabled = false;
-    const districtList = districts[selectedState]?.[selectedLanguage] || [];
+    // Map state to language for API call
+    const apiLanguage = STATE_LANGUAGE_MAPPING[state] || 'Marathi';
     
+    // Get product used (if already selected)
+    const productSelect = document.getElementById('usedProducts');
+    const productUsed = productSelect ? productSelect.value : 'None';
+    
+    console.log(`🌍 State selected: ${state} - Triggering WhatsApp API with language: ${apiLanguage}`);
+    
+    await sendWhatsAppNotification(mobile, apiLanguage, productUsed);
+}
+
+// ============================================
+// TRANSLATIONS
+// ============================================
+function updateTranslations() {
+    const lang = selectedLanguage;
+    const trans = translations[lang];
+
+    document.querySelectorAll('[data-tr]').forEach(el => {
+        const key = el.getAttribute('data-tr');
+        if (trans[key]) {
+            if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+                if (el.querySelector('[data-tr]')) {
+                    el.querySelector('[data-tr]').textContent = trans[key];
+                } else {
+                    el.textContent = trans[key];
+                }
+            } else {
+                el.textContent = trans[key];
+            }
+        }
+    });
+
+    document.querySelectorAll('[data-tr-ph]').forEach(el => {
+        const key = el.getAttribute('data-tr-ph');
+        if (trans[key]) {
+            el.placeholder = trans[key];
+        }
+    });
+
+    // Update state selection if already selected
+    const stateSelect = document.getElementById('state');
+    if (stateSelect && stateSelect.value) {
+        updateDistricts(stateSelect.value);
+    }
+}
+
+// ============================================
+// DISTRICTS
+// ============================================
+function updateDistricts(state) {
+    const districtSelect = document.getElementById('district');
+    if (!districtSelect) return;
+
+    districtSelect.disabled = false;
+    districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
+
+    const lang = selectedLanguage;
+    const districtList = districts[state]?.[lang] || [];
+
     districtList.forEach(district => {
         const option = document.createElement('option');
         option.value = district;
@@ -295,40 +346,32 @@ function validateForm() {
 
     // Mobile
     const mobile = document.getElementById('mobile').value.trim();
-    if (!mobile) {
-        showError('mobile', 'Mobile number is required');
-        document.getElementById('mobile').classList.add('error');
-        isValid = false;
-    } else if (!/^\d{10}$/.test(mobile)) {
-        showError('mobile', 'Mobile must be exactly 10 digits');
+    if (!mobile || mobile.length !== 10) {
+        showError('mobile', 'Valid 10-digit mobile number is required');
         document.getElementById('mobile').classList.add('error');
         isValid = false;
     }
 
     // Crops
-    const cropCheckboxes = document.querySelectorAll('input[name="crops"]:checked');
-    if (cropCheckboxes.length === 0) {
+    const selectedCrops = document.querySelectorAll('input[name="crops"]:checked');
+    if (selectedCrops.length === 0) {
         showError('crops', 'Please select at least one crop');
         isValid = false;
     }
-    
-    // If "Other" is selected, check if text is provided
+
+    // If "Other" is checked, validate the input
     const otherChk = document.getElementById('otherChk');
-    const otherCrop = document.getElementById('otherCrop').value.trim();
-    if (otherChk && otherChk.checked && !otherCrop) {
-        showError('crops', 'Please specify the other crop');
-        document.getElementById('otherCrop').classList.add('error');
+    const otherCrop = document.getElementById('otherCrop');
+    if (otherChk && otherChk.checked && otherCrop && !otherCrop.value.trim()) {
+        showError('crops', 'Please specify your crop');
+        otherCrop.classList.add('error');
         isValid = false;
     }
 
     // Acreage
-    const acreage = document.getElementById('acreage').value.trim();
-    if (!acreage) {
-        showError('acreage', 'Land area is required');
-        document.getElementById('acreage').classList.add('error');
-        isValid = false;
-    } else if (parseFloat(acreage) <= 0) {
-        showError('acreage', 'Land area must be greater than 0');
+    const acreage = parseFloat(document.getElementById('acreage').value);
+    if (!acreage || acreage <= 0) {
+        showError('acreage', 'Valid land area is required');
         document.getElementById('acreage').classList.add('error');
         isValid = false;
     }
@@ -414,7 +457,8 @@ function collectFormData() {
         state,
         district,
         place,
-        products_used: usedProducts
+        products_used: usedProducts,
+        Company_Source: COMPANY_SOURCE // Added Company_Source field
     };
 }
 
@@ -474,11 +518,13 @@ async function handleSubmit() {
 
     const data = collectFormData();
     
-    // Send to original webhook
+    // Send to original webhook (now includes Company_Source)
     if (ENABLE_WEBHOOK) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT);
+
+            console.log('📤 Sending data to webhook:', data);
 
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
@@ -499,12 +545,15 @@ async function handleSubmit() {
         }
     }
 
-    // Send WhatsApp notification
-    await sendWhatsAppNotification(
-        data.alternate_mobile,
-        data.language,
-        data.products_used
-    );
+    // Send WhatsApp notification if not already sent
+    if (!whatsappApiTriggered) {
+        const apiLanguage = STATE_LANGUAGE_MAPPING[data.state] || data.language;
+        await sendWhatsAppNotification(
+            data.alternate_mobile,
+            apiLanguage,
+            data.products_used
+        );
+    }
 
     // Show success screen
     showSuccess();
