@@ -253,7 +253,7 @@ function setupEventListeners() {
     }
     
     // Mobile number change - Check if state is already selected and trigger API
-    const mobileInput = document.getElementById('mobile');
+    // Note: mobileInput is already declared above, so we reuse it here
     if (mobileInput) {
         mobileInput.addEventListener('blur', async (e) => {
             const mobile = e.target.value.trim();
