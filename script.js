@@ -180,8 +180,25 @@ function setupEventListeners() {
     // Mobile input - digits only, max 10
     const mobileInput = document.getElementById('mobile');
     if (mobileInput) {
-        mobileInput.addEventListener('input', (e) => {
+        mobileInput.addEventListener('input', async (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+            
+            // Check if we just completed entering a valid mobile number
+            const mobile = e.target.value.trim();
+            console.log('📱 Mobile input changed, length:', mobile.length);
+            
+            if (mobile.length === 10) {
+                const stateSelect = document.getElementById('state');
+                const selectedStateValue = stateSelect ? stateSelect.value : '';
+                console.log('📱 Mobile is 10 digits, checking state:', selectedStateValue);
+                
+                // If state is already selected and API not triggered yet, trigger it now
+                if (selectedStateValue && !whatsappApiTriggered) {
+                    console.log('🚀 Triggering WhatsApp API immediately after mobile completion');
+                    await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
+                    whatsappApiTriggered = true;
+                }
+            }
         });
     }
 
@@ -220,6 +237,7 @@ function setupEventListeners() {
             const selectedStateValue = e.target.value;
             selectedState = selectedStateValue;
             console.log('🌍 Selected state value:', selectedStateValue);
+            console.log('🔍 whatsappApiTriggered flag:', whatsappApiTriggered);
             
             if (selectedStateValue) {
                 // ALWAYS Update districts first (this must happen regardless of mobile number)
@@ -230,15 +248,21 @@ function setupEventListeners() {
                 // Check if mobile number is entered and valid for API trigger
                 // Reuse mobileInput from earlier in setupEventListeners
                 const mobile = mobileInput ? mobileInput.value.trim() : '';
+                console.log('📱 Current mobile value:', mobile, '(length:', mobile.length + ')');
                 
                 if (mobile.length !== 10) {
-                    console.log('⚠️ Mobile number not yet complete. WhatsApp API will trigger after entering valid mobile number.');
+                    console.log('⚠️ Mobile number not yet complete (' + mobile.length + '/10 digits). WhatsApp API will trigger after entering valid mobile number.');
                     // Don't trigger API yet, but districts are already updated above
                 } else {
+                    console.log('✅ Mobile is valid (10 digits)');
                     // Trigger WhatsApp API only once per form session
                     if (!whatsappApiTriggered) {
+                        console.log('🚀 About to trigger WhatsApp API from state selection');
                         await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
                         whatsappApiTriggered = true;
+                        console.log('✅ API triggered, flag set to:', whatsappApiTriggered);
+                    } else {
+                        console.log('⏭️ API already triggered, skipping');
                     }
                 }
             } else {
@@ -250,23 +274,6 @@ function setupEventListeners() {
         });
     } else {
         console.error('❌ State select element not found!');
-    }
-    
-    // Mobile number change - Check if state is already selected and trigger API
-    // Note: mobileInput is already declared above, so we reuse it here
-    if (mobileInput) {
-        mobileInput.addEventListener('blur', async (e) => {
-            const mobile = e.target.value.trim();
-            const stateSelect = document.getElementById('state');
-            const selectedStateValue = stateSelect ? stateSelect.value : '';
-            
-            // If mobile is valid (10 digits) and state is selected, trigger API
-            if (mobile.length === 10 && selectedStateValue && !whatsappApiTriggered) {
-                console.log('✅ Mobile number valid and state selected - Triggering WhatsApp API');
-                await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
-                whatsappApiTriggered = true;
-            }
-        });
     }
 
     // Submit
