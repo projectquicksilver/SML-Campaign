@@ -217,25 +217,25 @@ function setupEventListeners() {
             selectedState = selectedStateValue;
             
             if (selectedStateValue) {
-                // Update districts
+                // ALWAYS Update districts first (this must happen regardless of mobile number)
                 updateDistricts(selectedStateValue);
                 
-                // Check if mobile number is entered and valid
+                // Check if mobile number is entered and valid for API trigger
                 const mobileInput = document.getElementById('mobile');
                 const mobile = mobileInput ? mobileInput.value.trim() : '';
                 
                 if (mobile.length !== 10) {
-                    console.log('⚠️ Please enter a valid 10-digit mobile number before selecting state to trigger WhatsApp API');
-                    // Don't trigger API yet, but store state selection
-                    return;
-                }
-                
-                // Trigger WhatsApp API only once per form session
-                if (!whatsappApiTriggered) {
-                    await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
-                    whatsappApiTriggered = true;
+                    console.log('⚠️ Mobile number not yet complete. WhatsApp API will trigger after entering valid mobile number.');
+                    // Don't trigger API yet, but districts are already updated above
+                } else {
+                    // Trigger WhatsApp API only once per form session
+                    if (!whatsappApiTriggered) {
+                        await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
+                        whatsappApiTriggered = true;
+                    }
                 }
             } else {
+                // If no state selected, disable and clear districts
                 districtSelect.disabled = true;
                 districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
             }
