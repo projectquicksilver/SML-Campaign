@@ -43,10 +43,10 @@ const LANGUAGE_CODE_MAPPING = {
     'English': 'Mr' // Default to Marathi for English
 };
 
-// State to Language mapping for API trigger
-const STATE_LANGUAGE_MAPPING = {
-    'Gujarat': 'Gujarati',
-    'Maharashtra': 'Marathi'
+// State to Language Code mapping for API trigger
+const STATE_LANGUAGE_CODE_MAPPING = {
+    'Gujarat': 'Gu',
+    'Maharashtra': 'Mr'
 };
 
 // ============================================
@@ -212,7 +212,7 @@ function setupEventListeners() {
     const districtSelect = document.getElementById('district');
     
     if (stateSelect) {
-        stateSelect.addEventListener('change', (e) => {
+        stateSelect.addEventListener('change', async (e) => {
             const selectedStateValue = e.target.value;
             selectedState = selectedStateValue;
             
@@ -220,14 +220,41 @@ function setupEventListeners() {
                 // Update districts
                 updateDistricts(selectedStateValue);
                 
+                // Check if mobile number is entered and valid
+                const mobileInput = document.getElementById('mobile');
+                const mobile = mobileInput ? mobileInput.value.trim() : '';
+                
+                if (mobile.length !== 10) {
+                    console.log('⚠️ Please enter a valid 10-digit mobile number before selecting state to trigger WhatsApp API');
+                    // Don't trigger API yet, but store state selection
+                    return;
+                }
+                
                 // Trigger WhatsApp API only once per form session
                 if (!whatsappApiTriggered) {
-                    triggerWhatsAppAPIOnStateSelection(selectedStateValue);
+                    await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
                     whatsappApiTriggered = true;
                 }
             } else {
                 districtSelect.disabled = true;
                 districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
+            }
+        });
+    }
+    
+    // Mobile number change - Check if state is already selected and trigger API
+    const mobileInput = document.getElementById('mobile');
+    if (mobileInput) {
+        mobileInput.addEventListener('blur', async (e) => {
+            const mobile = e.target.value.trim();
+            const stateSelect = document.getElementById('state');
+            const selectedStateValue = stateSelect ? stateSelect.value : '';
+            
+            // If mobile is valid (10 digits) and state is selected, trigger API
+            if (mobile.length === 10 && selectedStateValue && !whatsappApiTriggered) {
+                console.log('✅ Mobile number valid and state selected - Triggering WhatsApp API');
+                await triggerWhatsAppAPIOnStateSelection(selectedStateValue);
+                whatsappApiTriggered = true;
             }
         });
     }
@@ -243,26 +270,76 @@ function setupEventListeners() {
 // WHATSAPP API TRIGGER ON STATE SELECTION
 // ============================================
 async function triggerWhatsAppAPIOnStateSelection(state) {
-    // Get mobile number if available
+    // Get mobile number
     const mobileInput = document.getElementById('mobile');
     const mobile = mobileInput ? mobileInput.value.trim() : '';
     
     // Only trigger if mobile number is valid (10 digits)
     if (mobile.length !== 10) {
-        console.log('⏳ WhatsApp API will trigger when valid mobile number is entered');
+        console.log('⏳ WhatsApp API requires valid 10-digit mobile number. Please enter mobile number first.');
         return;
     }
     
-    // Map state to language for API call
-    const apiLanguage = STATE_LANGUAGE_MAPPING[state] || 'Marathi';
+    // Map state to language code for API call (Gu for Gujarat, Mr for Maharashtra)
+    const apiLanguageCode = STATE_LANGUAGE_CODE_MAPPING[state];
     
-    // Get product used (if already selected)
+    if (!apiLanguageCode) {
+        console.warn('⚠️ Unknown state selected:', state);
+        return;
+    }
+    
+    // Get product used (if already selected, otherwise use 'None')
     const productSelect = document.getElementById('usedProducts');
-    const productUsed = productSelect ? productSelect.value : 'None';
+    const productUsed = productSelect && productSelect.value ? productSelect.value : 'None';
     
-    console.log(`🌍 State selected: ${state} - Triggering WhatsApp API with language: ${apiLanguage}`);
+    // Determine campaign name based on state and product
+    let campaignName;
+    if (state === 'Gujarat') {
+        // Gujarat uses Gujarati campaigns
+        campaignName = CAMPAIGN_MAPPING['Gujarati']?.[productUsed] || 'thankgu';
+    } else if (state === 'Maharashtra') {
+        // Maharashtra uses Marathi campaigns
+        campaignName = CAMPAIGN_MAPPING['Marathi']?.[productUsed] || 'thankmr';
+    } else {
+        campaignName = 'thankmr'; // Default
+    }
     
-    await sendWhatsAppNotification(mobile, apiLanguage, productUsed);
+    console.log(`🌍 State selected: ${state} - Triggering WhatsApp API with Language Code: ${apiLanguageCode}, Campaign: ${campaignName}`);
+    
+    // Prepare WhatsApp payload
+    const whatsappPayload = {
+        did_no: DID_NO,
+        company: COMPANY,
+        agent_name: AGENT_NAME,
+        language: apiLanguageCode, // 'Gu' or 'Mr'
+        campaign_name: campaignName,
+        caller: mobile
+    };
+    
+    try {
+        console.log('📱 Sending WhatsApp notification with payload:', whatsappPayload);
+
+        const response = await fetch(WHATSAPP_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(whatsappPayload)
+        });
+
+        if (response.ok) {
+            console.log('✅ WhatsApp notification sent successfully on state selection');
+            return true;
+        } else {
+            console.warn('⚠️ WhatsApp API returned status:', response.status);
+            const responseText = await response.text();
+            console.warn('Response:', responseText);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ WhatsApp notification error:', error);
+        return false;
+    }
 }
 
 // ============================================
@@ -545,14 +622,40 @@ async function handleSubmit() {
         }
     }
 
-    // Send WhatsApp notification if not already sent
-    if (!whatsappApiTriggered) {
-        const apiLanguage = STATE_LANGUAGE_MAPPING[data.state] || data.language;
-        await sendWhatsAppNotification(
-            data.alternate_mobile,
-            apiLanguage,
-            data.products_used
-        );
+    // Send WhatsApp notification if not already sent (fallback)
+    if (!whatsappApiTriggered && data.state) {
+        console.log('📱 WhatsApp API was not triggered earlier, sending now...');
+        const apiLanguageCode = STATE_LANGUAGE_CODE_MAPPING[data.state];
+        
+        if (apiLanguageCode) {
+            let campaignName;
+            if (data.state === 'Gujarat') {
+                campaignName = CAMPAIGN_MAPPING['Gujarati']?.[data.products_used] || 'thankgu';
+            } else if (data.state === 'Maharashtra') {
+                campaignName = CAMPAIGN_MAPPING['Marathi']?.[data.products_used] || 'thankmr';
+            } else {
+                campaignName = 'thankmr';
+            }
+            
+            const whatsappPayload = {
+                did_no: DID_NO,
+                company: COMPANY,
+                agent_name: AGENT_NAME,
+                language: apiLanguageCode,
+                campaign_name: campaignName,
+                caller: data.alternate_mobile
+            };
+            
+            try {
+                await fetch(WHATSAPP_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(whatsappPayload)
+                });
+            } catch (error) {
+                console.error('❌ Fallback WhatsApp notification error:', error);
+            }
+        }
     }
 
     // Show success screen
