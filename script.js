@@ -228,7 +228,7 @@ function setupEventListeners() {
                 console.log('✅ updateDistricts completed');
                 
                 // Check if mobile number is entered and valid for API trigger
-                const mobileInput = document.getElementById('mobile');
+                // Reuse mobileInput from earlier in setupEventListeners
                 const mobile = mobileInput ? mobileInput.value.trim() : '';
                 
                 if (mobile.length !== 10) {
@@ -280,9 +280,8 @@ function setupEventListeners() {
 // WHATSAPP API TRIGGER ON STATE SELECTION
 // ============================================
 async function triggerWhatsAppAPIOnStateSelection(state) {
-    // Get mobile number
-    const mobileInput = document.getElementById('mobile');
-    const mobile = mobileInput ? mobileInput.value.trim() : '';
+    // Get mobile number from the form
+    const mobile = document.getElementById('mobile')?.value.trim() || '';
     
     // Only trigger if mobile number is valid (10 digits)
     if (mobile.length !== 10) {
@@ -698,5 +697,3 @@ function showSuccess() {
     document.getElementById('successScreen').classList.add('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-
