@@ -1,7 +1,7 @@
 // ============================================
 // CONFIGURATION
 // ============================================
-const WEBHOOK_URL = 'https://n8n.srv1152566.hstgr.cloud/webhook-test/84ec9b62-a32c-45e0-8068-a796a5682eba';
+const WEBHOOK_URL = 'https://n8n.srv1152566.hstgr.cloud/webhook/84ec9b62-a32c-45e0-8068-a796a5682eba';
 const ENABLE_WEBHOOK = true;
 const WEBHOOK_TIMEOUT = 5000;
 
@@ -698,4 +698,5 @@ function showSuccess() {
     document.getElementById('successScreen').classList.add('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
