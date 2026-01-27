@@ -211,14 +211,21 @@ function setupEventListeners() {
     const stateSelect = document.getElementById('state');
     const districtSelect = document.getElementById('district');
     
+    console.log('🔧 State select element:', stateSelect);
+    console.log('🔧 District select element:', districtSelect);
+    
     if (stateSelect) {
         stateSelect.addEventListener('change', async (e) => {
+            console.log('🔄 State change event triggered!');
             const selectedStateValue = e.target.value;
             selectedState = selectedStateValue;
+            console.log('🌍 Selected state value:', selectedStateValue);
             
             if (selectedStateValue) {
                 // ALWAYS Update districts first (this must happen regardless of mobile number)
+                console.log('📋 Calling updateDistricts with state:', selectedStateValue);
                 updateDistricts(selectedStateValue);
+                console.log('✅ updateDistricts completed');
                 
                 // Check if mobile number is entered and valid for API trigger
                 const mobileInput = document.getElementById('mobile');
@@ -236,10 +243,13 @@ function setupEventListeners() {
                 }
             } else {
                 // If no state selected, disable and clear districts
+                console.log('❌ No state selected, disabling district dropdown');
                 districtSelect.disabled = true;
                 districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
             }
         });
+    } else {
+        console.error('❌ State select element not found!');
     }
     
     // Mobile number change - Check if state is already selected and trigger API
@@ -382,14 +392,28 @@ function updateTranslations() {
 // DISTRICTS
 // ============================================
 function updateDistricts(state) {
+    console.log('📋 updateDistricts called with state:', state);
     const districtSelect = document.getElementById('district');
-    if (!districtSelect) return;
+    console.log('📋 District select element:', districtSelect);
+    
+    if (!districtSelect) {
+        console.error('❌ District select element not found!');
+        return;
+    }
 
+    console.log('📋 Current selectedLanguage:', selectedLanguage);
+    console.log('📋 Before update - disabled:', districtSelect.disabled);
+    
     districtSelect.disabled = false;
+    console.log('📋 After setting disabled=false:', districtSelect.disabled);
+    
     districtSelect.innerHTML = `<option value="">${translations[selectedLanguage].distSel}</option>`;
 
     const lang = selectedLanguage;
     const districtList = districts[state]?.[lang] || [];
+    
+    console.log('📋 District list for', state, 'in', lang, ':', districtList);
+    console.log('📋 Number of districts:', districtList.length);
 
     districtList.forEach(district => {
         const option = document.createElement('option');
@@ -397,6 +421,9 @@ function updateDistricts(state) {
         option.textContent = district;
         districtSelect.appendChild(option);
     });
+    
+    console.log('✅ Districts updated. Total options:', districtSelect.options.length);
+    console.log('✅ Final disabled state:', districtSelect.disabled);
 }
 
 // ============================================
